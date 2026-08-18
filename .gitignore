@@ -1,0 +1,6 @@
+.DS_Store
+*.plugin
+node_modules/
+
+# Internal working notes — must not be published
+INTERNAL.md

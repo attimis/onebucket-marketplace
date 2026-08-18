@@ -1,0 +1,35 @@
+OneBucket Marketplace
+Copyright 2026 Attimis Corporation
+
+This product includes software developed at Attimis Corporation
+(https://www.onebucket.io/about).
+
+
+SCOPE OF THIS LICENSE
+---------------------
+
+The Apache License, Version 2.0 in the accompanying LICENSE file applies to the
+contents of this repository only:
+
+  - the marketplace catalog (.claude-plugin/marketplace.json)
+  - the plugin manifests (plugins/*/.claude-plugin/plugin.json, .mcp.json)
+  - the skill definitions (plugins/*/skills/)
+  - the accompanying documentation
+
+It grants no right, title, or interest in the OneBucket service, its APIs, its
+hosted endpoints, or its underlying software, all of which are proprietary to
+Attimis Corporation and are governed by separate terms. This repository contains
+no part of the OneBucket service; it contains configuration that directs a
+client to that service, and instructions for using it.
+
+Access to the OneBucket service through this plugin requires a OneBucket
+account and is subject to the agreement covering that account.
+
+
+TRADEMARKS
+----------
+
+"OneBucket" and "Attimis" are trademarks of Attimis Corporation. As set out in
+section 6 of the License, no trademark rights are granted. Redistributions of
+modified versions must not use these names in any way that suggests endorsement
+by, or affiliation with, Attimis Corporation.

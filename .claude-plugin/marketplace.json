@@ -1,0 +1,18 @@
+{
+  "name": "onebucket",
+  "owner": {
+    "name": "Attimis Corporation",
+    "email": "support@attimis.co",
+    "url": "https://www.onebucket.io/about"
+  },
+  "description": "OneBucket storage plugins for Claude.",
+  "plugins": [
+    {
+      "name": "onebucket",
+      "displayName": "OneBucket",
+      "source": "./plugins/onebucket",
+      "category": "storage",
+      "tags": ["storage", "s3", "object-storage"]
+    }
+  ]
+}

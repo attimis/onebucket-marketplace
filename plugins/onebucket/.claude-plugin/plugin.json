@@ -1,0 +1,17 @@
+{
+  "name": "onebucket",
+  "version": "0.2.0",
+  "description": "Connect OneBucket S3 storage in US East and US West, and work with objects of any size — including large binary files that exceed inline limits.",
+  "author": {
+    "name": "Attimis Corporation",
+    "email": "support@attimis.co",
+    "url": "https://www.onebucket.io/about"
+  },
+  "homepage": "https://www.onebucket.io",
+  "keywords": [
+    "storage",
+    "s3",
+    "object-storage",
+    "data-processing"
+  ]
+}
