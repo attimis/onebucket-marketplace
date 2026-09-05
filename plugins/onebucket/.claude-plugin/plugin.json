@@ -1,7 +1,7 @@
 {
   "name": "onebucket",
-  "version": "0.2.0",
-  "description": "Connect OneBucket S3 storage in US East and US West, and work with objects of any size — including large binary files that exceed inline limits.",
+  "version": "0.3.0",
+  "description": "Connect OneBucket S3 storage and its storage-event stream, and work with objects of any size — including large binary files that exceed inline limits.",
   "author": {
     "name": "Attimis Corporation",
     "email": "support@attimis.co",
@@ -12,6 +12,23 @@
     "storage",
     "s3",
     "object-storage",
+    "events",
     "data-processing"
-  ]
+  ],
+  "userConfig": {
+    "endpoint": {
+      "type": "string",
+      "title": "OneBucket storage endpoint",
+      "description": "MCP URL for object operations. Keep the default: it is routed to the nearest region. Override only to pin a region (https://core.cluster7.onebucket.io, https://core.cluster8.onebucket.io) or to reach a private cluster.",
+      "default": "https://core.onebucket.io",
+      "required": true
+    },
+    "events_endpoint": {
+      "type": "string",
+      "title": "OneBucket events endpoint",
+      "description": "MCP URL for the storage-event stream. Keep the default: it is routed to the nearest region. Override only to pin a region (https://synapse.cluster7.onebucket.io, https://synapse.cluster8.onebucket.io) or to reach a private cluster.",
+      "default": "https://synapse.onebucket.io",
+      "required": true
+    }
+  }
 }

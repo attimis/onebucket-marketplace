@@ -4,20 +4,19 @@ Connect OneBucket S3 storage and work with objects of any size.
 
 ## What's included
 
-**Connectors** — two regional OneBucket MCP servers, each providing `list`, `get`, `put`,
-`presign`, `copy`, `move`, `delete`, and related object operations.
+**Connectors** — two OneBucket MCP servers, each behind a single global hostname:
 
-| Region | Server name |
-|---|---|
-| US East | `onebucket-us-east` |
-| US West | `onebucket-us-west` |
+| Connector | Endpoint | Provides |
+|---|---|---|
+| `onebucket` | `https://core.onebucket.io` | `list`, `get`, `put`, `presign`, `copy`, `move`, `delete`, and related object operations |
+| `onebucket-events` | `https://synapse.onebucket.io` | `list_events`, `get_event`, `tail_events` — the storage-event stream |
 
-Both are points of presence onto the **same logical storage** — same buckets, same objects,
-same backends, over shared metadata. Either endpoint returns the same answer, so region is a
-**latency choice, not a data choice**; the far one costs time, never correctness.
+Each hostname is routed to the nearest region, so there is nothing to choose: one server
+name, one set of tools, same buckets and objects from anywhere. Routing is by geographic
+proximity today and will move to anycast; neither change is visible to the plugin.
 
-Each is a separate connector with its own authorization, so authorize whichever you use.
-Both server names carry their region, keeping it visible in every tool name.
+Each connector is a separate authorization, so authorize both when prompted (or only
+`onebucket` if you never need events).
 
 **Skill: onebucket-objects** — the workflow for reading and processing stored objects.
 It exists because object size, not bandwidth, is the real constraint: a 95 MB file is
@@ -26,19 +25,27 @@ to a direct read and large ones to a sandbox download, so Claude processes big f
 ordinary tooling (ffprobe, exiftool, pandas) and returns only conclusions.
 
 Without the skill, Claude has to discover this on its own each session and can pick the
-wrong transport. With it, the path is deterministic.
-
-It also handles **region selection**, which is the cost of exposing two connectors: no tool
-takes a region argument, so the choice is implicit in which tool gets called. Because the
-data is shared, the guidance is mostly about *not* wasting effort — a not-found is
-authoritative, so don't re-check the other region; don't fan the same query out to both;
-don't ask the user which to use. The one real constraint is that `copy`, `move`, and
-`migrate` return once *queued*, so a read-after-write sequence must stay on one endpoint or
-it can observe the pre-write state.
+wrong transport. With it, the path is deterministic. It also teaches when to reach for the
+event stream instead of polling `list`.
 
 ## Install
 
-Install the plugin, then authenticate the OneBucket connector when prompted.
+Install the plugin, accept the default endpoints when prompted, then authenticate the
+OneBucket connectors.
+
+### Pinning a region or using a private cluster
+
+The plugin exposes two settings, **OneBucket storage endpoint** and **OneBucket events
+endpoint**, prompted when the plugin is enabled. Leave them at their defaults unless you
+have a reason not to. Region-pinned hostnames remain valid if you need a fixed region:
+
+| Region | Storage endpoint | Events endpoint |
+|---|---|---|
+| US East (Ashburn) | `https://core.cluster8.onebucket.io` | `https://synapse.cluster8.onebucket.io` |
+| US West (San Jose) | `https://core.cluster7.onebucket.io` | `https://synapse.cluster7.onebucket.io` |
+
+Changing a setting later means disabling and re-enabling the plugin. Team and Enterprise
+administrators can preset these values org-wide through managed `pluginConfigs`.
 
 ## Prerequisite: sandbox network egress
 
@@ -50,14 +57,16 @@ On Team and Enterprise plans, an organization owner sets this under
 
 - **Allow network egress** — enabled
 - **Domain allowlist** — either *All domains*, or *package managers and specific domains*
-  with the storage host for each region you use added:
-  - US East — `s3.cluster8.onebucket.io`
-  - US West — `s3.cluster7.onebucket.io`
+  with the storage hosts added:
+  - `s3.onebucket.io`
+  - `s3.cluster8.onebucket.io`
+  - `s3.cluster7.onebucket.io`
 
-  Note these are the **`s3.` storage hosts**, not the `mcp-core.` hosts. Presigned URLs
-  resolve to the storage endpoint, and that is what the sandbox connects to. Allowlisting
-  only one region's host makes large-object reads fail in the other region while small
-  inline reads keep working — a confusing split, so add both if you use both.
+  These are the **`s3.` storage hosts**, not the MCP hosts. Presigned URLs resolve to the
+  storage endpoint of whichever region served the request, and that is what the sandbox
+  connects to. Add all three so a request routed to either region works; allowlisting
+  only one makes large-object reads fail intermittently while small inline reads keep
+  working.
 
 Changes do not apply to conversations already in progress; start a new session after
 updating.
@@ -83,6 +92,8 @@ What's in the first bucket?
 Get the metadata for that video in storage.
 Search warandpeace.txt for every mention of Borodino.
 Pull the EXIF off IMG_2597.jpeg.
+What was uploaded to the ingest bucket in the last hour?
+Tell me when the nightly export lands.
 ```
 
 ## Behavior notes
@@ -99,4 +110,7 @@ authenticating.
 
 **Asynchronous operations return when queued.** `copy`, `move`, and `migrate` report success
 once the work is accepted, not once it has landed, so a destination may not be readable for
-a moment afterwards.
+a moment afterwards. `tail_events` is the reliable way to know when it has.
+
+**Events start now.** `tail_events` without a cursor begins from the moment it is called;
+`list_events` covers history (the last 24 hours by default).

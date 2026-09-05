@@ -53,7 +53,7 @@ claude plugin marketplace add attimis/onebucket-marketplace@v1.0
 
 **The trap:** `version` in `plugin.json` pins the plugin. Push new commits without
 changing that string and existing users keep their cached copy — Claude sees the same
-version and skips them. The plugin currently declares `"version": "0.1.0"`.
+version and skips them. The plugin currently declares `"version": "0.3.0"`.
 
 Two workable policies. Pick one and hold to it.
 
@@ -69,11 +69,11 @@ catalog. The entry in this marketplace deliberately omits it.
 Release flow with explicit versions:
 
 ```bash
-# 1. bump plugins/onebucket/.claude-plugin/plugin.json  →  "version": "0.2.0"
+# 1. bump plugins/onebucket/.claude-plugin/plugin.json  →  "version": "0.4.0"
 # 2. validate
 claude plugin validate .
 # 3. commit and push
-git commit -am "onebucket 0.2.0" && git push
+git commit -am "onebucket 0.4.0" && git push
 ```
 
 Clients then refresh and update:

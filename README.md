@@ -11,14 +11,14 @@ Published by [Attimis Corporation](https://www.onebucket.io/about).
 /plugin install onebucket@onebucket
 ```
 
-Then authorize the OneBucket connectors when prompted — one per region, so authorize only
-the region(s) you use.
+Accept the default endpoints when prompted, then authorize the two OneBucket connectors:
+`onebucket` (object operations) and `onebucket-events` (the storage-event stream).
 
 ## Plugins
 
 | Plugin | Description |
 |---|---|
-| `onebucket` | OneBucket storage connectors for US East and US West, plus a skill for region routing and for working with objects of any size, including large binary files that exceed inline limits. |
+| `onebucket` | OneBucket storage and storage-event connectors on single global endpoints, plus a skill for working with objects of any size, including large binary files that exceed inline limits. |
 
 ## Prerequisite for large objects
 
@@ -27,7 +27,7 @@ returned through the model. This requires sandbox network egress to the storage 
 
 On Team and Enterprise plans an organization owner sets this under **Organization
 settings → Capabilities**: enable *Allow network egress*, and set the domain allowlist to
-*All domains* or add the storage host explicitly.
+*All domains* or add the storage hosts explicitly.
 
 See [`plugins/onebucket/README.md`](plugins/onebucket/README.md) for detail.
 

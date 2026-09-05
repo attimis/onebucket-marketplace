@@ -1,6 +1,6 @@
 ---
 name: onebucket-objects
-description: "Read, inspect, and process objects in OneBucket S3 storage — including large binary files (video, images, archives, datasets) that exceed inline size limits. Use whenever a task involves a stored object: reading a file from a bucket, analyzing a stored video or image, extracting metadata, searching a large dataset, or writing results back to storage. Covers choosing the right region (US East, US West) and the correct transport for objects of any size."
+description: "Read, inspect, and process objects in OneBucket S3 storage — including large binary files (video, images, archives, datasets) that exceed inline size limits — and query the storage-event stream. Use whenever a task involves a stored object: reading a file from a bucket, analyzing a stored video or image, extracting metadata, searching a large dataset, writing results back to storage, or finding out what changed in a bucket and when. Covers the correct transport for objects of any size."
 ---
 
 # Working with OneBucket objects
@@ -13,54 +13,32 @@ A 95 MB object is roughly 25 million tokens. The size limits on `get` exist to p
 context, not bandwidth. For anything large, move the processing to the bytes rather than
 the bytes to the model.
 
-## Choose a region — a latency choice, not a data choice
+## Two connectors, one storage
 
-Two endpoints are configured, each exposing its own copy of every tool:
-
-| Region | Tool prefix | Site |
+| Connector | Tools | Purpose |
 |---|---|---|
-| US East | `onebucket-us-east` | Ashburn |
-| US West | `onebucket-us-west` | San Jose |
+| `onebucket` | `list`, `get`, `put`, `head`, `presign`, `copy`, `move`, `delete`, `locate`, `migrate`, `prefetch`, `create` | Object operations |
+| `onebucket-events` | `list_events`, `get_event`, `tail_events` | What happened in storage, and when |
 
-**Both are points of presence onto the same logical storage** — the same buckets, the same
-objects, the same backends, over shared metadata. Either region returns the same answer.
-Calling the farther one costs time, never correctness.
+Both are single global endpoints. DNS routes each request to the nearest region, so there
+is no region to choose and no region argument on any tool. Do not ask the user which region
+to use.
 
-Consequently:
-
-- **A not-found is authoritative.** If an object isn't there through one region, it isn't
-  there. Do not re-check the other region "to be sure" — it doubles the calls and tells you
-  nothing new.
-- **Prefer the region the user names**, or the one nearer to them if they've said where they
-  are. With no signal either is correct — pick `onebucket-us-east` and proceed rather than
-  asking which they want.
-- **Stay on one region for a whole task.** Not for read correctness, but because `copy`,
-  `move`, and `migrate` are asynchronous — they return once *queued*. Writing through one
-  region and immediately reading through the other can observe the pre-write state. Keep any
-  read-after-write sequence on a single region.
-- **Never fan out the same query to both**, and never compare their answers hunting for a
-  discrepancy. The data is shared; a genuine difference would be a fault to report, not a
-  routing hint.
-
-### If a region is not authorized
-
-Each region is a separate connector with its own authorization. If a region's tools fail
-with an authentication or authorization error, that region is not enabled for this user:
-say so once, continue with the region that works, and do not retry.
+Each connector has its own authorization. If a connector's tools fail with an
+authentication or authorization error, it is not enabled for this user: say so once,
+continue with what works, and do not retry.
 
 ### `locate` and `migrate` are about backends, not regions
 
 `locate` reports which *storage backends* currently hold an object; `migrate` copies it to
-another backend. That is the real placement primitive, it operates inside the shared Core,
-and it is unrelated to which regional endpoint you called. Neither tool tells you anything
-about `us-east` versus `us-west`.
+another backend. That is the real placement primitive and it operates inside the shared
+storage. Neither has anything to do with the network path a request took.
 
 ---
 
 ## Choose a transport before transferring anything
 
-Once the region is settled, call `list` first. It returns every object with its exact
-size. Use that to pick a path.
+Call `list` first. It returns every object with its exact size. Use that to pick a path.
 
 ```
 size ≤ 700 KB  and  text / image / audio   →  get                    (path A)
@@ -171,9 +149,6 @@ presign(bucket, key, method="PUT")
 curl -sSfL -X PUT --upload-file /path/in/sandbox/result "<presigned-put-url>"
 ```
 
-Write through the same region you read through, so an async write and any follow-up read
-stay on one endpoint.
-
 ### `copy` and `move` are same-bucket only
 
 Both operate **within a single bucket** — `dest_bucket` must equal the source bucket, so
@@ -188,6 +163,30 @@ immediately. Confirm with `head` before treating a copy as done.
 
 ---
 
+## Storage events
+
+The `onebucket-events` connector answers "what changed, and when" without listing buckets
+and diffing. Events are scoped to the caller's organization and carry the bucket, key,
+action (for example `s3:PutObject`), and timestamp.
+
+- **`list_events`** — history, most recent first. Defaults to the last 24 hours; filter by
+  `since`/`until` (RFC 3339), `bucket`, or `action`. Page with the returned `nextCursor`,
+  keeping the filters identical across pages.
+- **`get_event`** — one event by its `eventId`.
+- **`tail_events`** — long-poll for new events, oldest first. Without a cursor it starts
+  from *now*; use `list_events` for anything already in the past. Always pass the returned
+  `nextCursor` to the next call. An empty result is normal — poll again.
+
+Use cases: auditing who wrote to a bucket and when, confirming an upload from another
+system has landed, or watching a prefix while a batch job runs. Use `tail_events` with a
+sensible `waitSeconds` rather than polling `list` in a loop.
+
+Events are a record of activity, not a source of object bytes. Once an event points at an
+object of interest, go back to the `onebucket` connector and apply the transport rules
+above.
+
+---
+
 ## Anti-patterns
 
 | Don't | Why |
@@ -197,11 +196,9 @@ immediately. Confirm with `head` before treating a copy as done.
 | Split a large object into many inline `get` calls | Same context ceiling, reached more slowly |
 | Ask the user to download and re-upload | The sandbox path exists precisely to avoid this |
 | Work around an empty `get` response | Report it — it is a fault, not a size limit |
-| Re-check the other region after a not-found | Same data both sides — a miss is authoritative |
-| Fan out the same query to both regions | Same answer, twice the calls, no new information |
-| Read through one region straight after an async write to the other | `copy`/`move`/`migrate` return when *queued* — you may see the pre-write state |
-| Ask the user which region to use | It's a latency choice; pick one and proceed |
-| Use `locate` to pick a region | It reports storage backends, which is unrelated to the endpoint you called |
+| Ask the user which region to use | There is one endpoint; DNS picks the region |
+| Poll `list` in a loop to detect a change | `tail_events` blocks until something happens |
+| Use `locate` to reason about regions | It reports storage backends, unrelated to routing |
 
 ## When a step fails
 

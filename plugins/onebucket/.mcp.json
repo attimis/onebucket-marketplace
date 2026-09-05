@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "onebucket-us-east": {
+    "onebucket": {
       "type": "http",
-      "url": "https://mcp-core.cluster8.onebucket.io"
+      "url": "${user_config.endpoint}"
     },
-    "onebucket-us-west": {
+    "onebucket-events": {
       "type": "http",
-      "url": "https://mcp-core.cluster7.onebucket.io"
+      "url": "${user_config.events_endpoint}"
     }
   }
 }
