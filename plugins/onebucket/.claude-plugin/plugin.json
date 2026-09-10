@@ -19,8 +19,8 @@
     "endpoint": {
       "type": "string",
       "title": "OneBucket storage endpoint",
-      "description": "MCP URL for object operations. Keep the default: it is routed to the nearest region. Override only to pin a region (https://core.cluster7.onebucket.io, https://core.cluster8.onebucket.io) or to reach a private cluster.",
-      "default": "https://core.onebucket.io",
+      "description": "MCP URL for object operations. Keep the default: it is routed to the nearest region. Override only to pin a region (https://data.cluster7.onebucket.io, https://data.cluster8.onebucket.io) or to reach a private cluster.",
+      "default": "https://data.onebucket.io",
       "required": true
     },
     "events_endpoint": {

@@ -8,7 +8,7 @@ Connect OneBucket S3 storage and work with objects of any size.
 
 | Connector | Endpoint | Provides |
 |---|---|---|
-| `onebucket` | `https://core.onebucket.io` | `list`, `get`, `put`, `presign`, `copy`, `move`, `delete`, and related object operations |
+| `onebucket` | `https://data.onebucket.io` | `list`, `get`, `put`, `presign`, `copy`, `move`, `delete`, and related object operations |
 | `onebucket-events` | `https://synapse.onebucket.io` | `list_events`, `get_event`, `tail_events` — the storage-event stream |
 
 Each hostname is routed to the nearest region, so there is nothing to choose: one server
@@ -41,8 +41,8 @@ have a reason not to. Region-pinned hostnames remain valid if you need a fixed r
 
 | Region | Storage endpoint | Events endpoint |
 |---|---|---|
-| US East (Ashburn) | `https://core.cluster8.onebucket.io` | `https://synapse.cluster8.onebucket.io` |
-| US West (San Jose) | `https://core.cluster7.onebucket.io` | `https://synapse.cluster7.onebucket.io` |
+| US East (Ashburn) | `https://data.cluster8.onebucket.io` | `https://synapse.cluster8.onebucket.io` |
+| US West (San Jose) | `https://data.cluster7.onebucket.io` | `https://synapse.cluster7.onebucket.io` |
 
 Changing a setting later means disabling and re-enabling the plugin. Team and Enterprise
 administrators can preset these values org-wide through managed `pluginConfigs`.
